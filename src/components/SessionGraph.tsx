@@ -54,7 +54,7 @@ export function SessionGraph({ result }: Props) {
   const hasEV = result.hasEVData
 
   const allValues = data.flatMap(d => hasEV ? [d.cumNet, d.cumEV] : [d.cumNet])
-  const maxAbs = Math.max(...allValues.map(Math.abs), 0.01)
+  const maxAbs = allValues.reduce((m, v) => Math.max(m, Math.abs(v)), 0.01)
   const yDomain = [-maxAbs * 1.15, maxAbs * 1.15]
 
   const finalNet = data[data.length - 1]?.cumNet ?? 0

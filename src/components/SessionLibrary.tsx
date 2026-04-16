@@ -25,8 +25,8 @@ interface BreakdownRow {
   durationMinutes: number
 }
 
-function stakeLabel(bb: number, sb: number) {
-  const fmt = (n: number) => n % 1 === 0 ? `$${n}` : `$${n}`
+function stakeLabel(sb: number, bb: number) {
+  const fmt = (n: number) => `$${n}`
   return `${fmt(sb)}/${fmt(bb)}`
 }
 
@@ -49,7 +49,7 @@ export function SessionLibrary({ records, onView, onDelete, onUpload }: Props) {
   const [filterStake, setFilterStake] = useState<string>('all')
 
   // Build breakdown rows: one per (record × stake)
-  const { rows, sites, stakes } = useMemo(() => {
+  const { rows, recById, sites, stakes } = useMemo(() => {
     const rows: BreakdownRow[] = []
     const siteSet = new Set<string>()
     const stakeSet = new Set<string>()
@@ -69,7 +69,7 @@ export function SessionLibrary({ records, onView, onDelete, onUpload }: Props) {
       for (const [key, hands] of byStake) {
         const bb = hands[0].stakes.bb
         const sb = hands[0].stakes.sb
-        const label = stakeLabel(bb, sb)
+        const label = stakeLabel(sb, bb)
         stakeSet.add(key)
 
         const result = analyseSession(hands)
@@ -91,15 +91,17 @@ export function SessionLibrary({ records, onView, onDelete, onUpload }: Props) {
     }
 
     // Sort rows: newest session first, then by stake descending
+    const recById = new Map(records.map(r => [r.id, r]))
     rows.sort((a, b) => {
-      const ra = records.find(r => r.id === a.recordId)!
-      const rb = records.find(r => r.id === b.recordId)!
+      const ra = recById.get(a.recordId)!
+      const rb = recById.get(b.recordId)!
       if (rb.storedAt !== ra.storedAt) return rb.storedAt - ra.storedAt
       return b.stakeKey.localeCompare(a.stakeKey)
     })
 
     return {
       rows,
+      recById,
       sites: [...siteSet].sort(),
       stakes: [...stakeSet].sort((a, b) => {
         const [,abb] = a.split('/').map(Number)
@@ -191,7 +193,7 @@ export function SessionLibrary({ records, onView, onDelete, onUpload }: Props) {
             <option value="all">All Stakes</option>
             {stakes.map(k => {
               const [sb, bb] = k.split('/').map(Number)
-              return <option key={k} value={k}>{stakeLabel(bb, sb)}</option>
+              return <option key={k} value={k}>{stakeLabel(sb, bb)}</option>
             })}
           </select>
         )}
@@ -221,7 +223,7 @@ export function SessionLibrary({ records, onView, onDelete, onUpload }: Props) {
         </div>
 
         {grouped.map(({ id: recordId, rows: sessionRows }) => {
-          const rec = records.find(r => r.id === recordId)!
+          const rec = recById.get(recordId)!
           const sessionNet = Math.round(sessionRows.reduce((s, r) => s + r.net, 0) * 100) / 100
           const sessionHands = sessionRows.reduce((s, r) => s + r.hands, 0)
           const sessionRake = Math.round(sessionRows.reduce((s, r) => s + r.rake, 0) * 100) / 100

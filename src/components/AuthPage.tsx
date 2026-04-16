@@ -93,6 +93,7 @@ export function AuthPage() {
             <input
               type="password"
               required
+              minLength={mode === 'signup' ? 8 : undefined}
               autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
               value={password}
               onChange={e => setPassword(e.target.value)}

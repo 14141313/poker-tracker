@@ -19,8 +19,9 @@ export async function loadCloudRecords(): Promise<SessionRecord[]> {
 }
 
 export async function saveCloudRecord(record: SessionRecord): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Not authenticated')
+  const { data, error: authError } = await supabase.auth.getUser()
+  if (authError || !data.user) throw new Error('Not authenticated')
+  const user = data.user
   const { error } = await supabase.from('sessions').upsert({
     id: record.id,
     user_id: user.id,

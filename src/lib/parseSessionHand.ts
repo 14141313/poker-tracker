@@ -60,7 +60,7 @@ type Street = 'preflop' | 'flop' | 'turn' | 'river'
 // ── Main parser ───────────────────────────────────────────────────────────────
 
 export function parseSessionHand(hand: string): SessionHand | null {
-  const lines = hand.split('\n')
+  const lines = hand.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n')
 
   // Hand ID
   const idMatch = lines[0]?.match(HAND_ID_RE)
@@ -69,7 +69,9 @@ export function parseSessionHand(hand: string): SessionHand | null {
 
   // Timestamp
   const dateMatch = hand.match(DATE_RE)
-  const timestamp = dateMatch ? new Date(dateMatch[1].replace(/\//g, '-')) : new Date(0)
+  const timestamp = dateMatch
+    ? new Date(dateMatch[1].replace(/\//g, '-').replace(' ', 'T'))
+    : new Date(0)
 
   // Stakes
   const stakesMatch = hand.match(STAKES_RE)
@@ -90,7 +92,7 @@ export function parseSessionHand(hand: string): SessionHand | null {
   if (buttonSeat === -1) return null
 
   // Seats + hero detection
-  const seats: number[] = []
+  const seatsSet = new Set<number>()
   let heroSeat = -1
   const playerNames = new Map<number, string>()
 
@@ -98,7 +100,7 @@ export function parseSessionHand(hand: string): SessionHand | null {
     const youMatch = line.match(SEAT_YOU_RE)
     if (youMatch) {
       const seatNum = parseInt(youMatch[1], 10)
-      seats.push(seatNum)
+      seatsSet.add(seatNum)
       playerNames.set(seatNum, youMatch[2].trim())
       heroSeat = seatNum
       continue
@@ -107,11 +109,12 @@ export function parseSessionHand(hand: string): SessionHand | null {
     if (seatMatch) {
       const seatNum = parseInt(seatMatch[1], 10)
       const name = seatMatch[2].trim()
-      seats.push(seatNum)
+      seatsSet.add(seatNum)
       playerNames.set(seatNum, name)
       if (name === 'Hero') heroSeat = seatNum
     }
   }
+  const seats = [...seatsSet]
 
   if (heroSeat === -1) return null
 

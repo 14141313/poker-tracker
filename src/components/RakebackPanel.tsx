@@ -34,7 +34,7 @@ export function RakebackPanel({ result }: Props) {
   // GEM cashback estimate
   const gems = parseFloat(gemBalance) || 0
   const redeemed = parseFloat(gemRedeemed) || 0
-  const netGems = gems - redeemed
+  const netGems = Math.max(0, gems - redeemed)
   const gemValue = netGems / GEMS_PER_DOLLAR
 
   // True net = stated net + rakeback value + gem cashback

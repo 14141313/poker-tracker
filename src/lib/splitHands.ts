@@ -3,7 +3,7 @@
  * Delimiter: lines starting with "Poker Hand #"
  */
 export function splitHands(raw: string): string[] {
-  const lines = raw.split('\n')
+  const lines = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n')
   const hands: string[] = []
   let current: string[] = []
 

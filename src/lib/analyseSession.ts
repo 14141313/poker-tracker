@@ -84,7 +84,7 @@ export function analyseSession(rawHands: SessionHand[]): SessionResult {
         const villainInts = parseCards(h.villainCards[0])
         const boardInts = parseCards(h.boardAtAllIn)
         const equity = ploEquity(heroInts, villainInts, boardInts)
-        evNet = round2(equity * h.totalPot - h.heroContributed)
+        evNet = round2(equity * (h.totalPot - h.rake) - h.heroContributed)
         hasEVData = true
       } catch {
         // Invalid card strings — fall back to actual result

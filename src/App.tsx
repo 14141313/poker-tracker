@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { splitHands } from './lib/splitHands'
 import { parseSessionHand } from './lib/parseSessionHand'
 import { analyseSession } from './lib/analyseSession'
@@ -80,14 +80,14 @@ export default function App() {
       await saveCloudRecord(record)
       const updated = await loadCloudRecords()
       setRecords(updated)
+      setActiveRecordId(record.id)
+      setActiveStake(null)
+      setView('session')
     } catch (err: unknown) {
       setCloudError(err instanceof Error ? err.message : 'Failed to save session')
     }
 
-    setActiveRecordId(record.id)
-    setActiveStake(null)
     setUploading(false)
-    setView('session')
   }, [])
 
   const onDrop = useCallback((e: React.DragEvent) => {
@@ -96,20 +96,20 @@ export default function App() {
     if (e.dataTransfer.files.length > 0) processFiles(e.dataTransfer.files)
   }, [processFiles])
 
-  // ── Derived: active session result ─────────────────────────────────────────
-  const activeResult: SessionResult | null = (() => {
-    if (!activeRecordId) return null
-    const rec = records.find(r => r.id === activeRecordId)
+  // ── Derived: active record + result (memoised to avoid re-running Monte Carlo) ─
+  const rec = useMemo(
+    () => records.find(r => r.id === activeRecordId) ?? null,
+    [records, activeRecordId]
+  )
+
+  const activeResult: SessionResult | null = useMemo(() => {
     if (!rec) return null
     let hands = rec.hands.map(rawToHand)
     if (activeStake) hands = hands.filter(h => `${h.stakes.sb}/${h.stakes.bb}` === activeStake)
     return hands.length > 0 ? analyseSession(hands) : null
-  })()
+  }, [rec, activeStake])
 
-  // ── Derived: stake tabs for active session ─────────────────────────────────
-  const activeStakes: string[] = (() => {
-    if (!activeRecordId) return []
-    const rec = records.find(r => r.id === activeRecordId)
+  const activeStakes: string[] = useMemo(() => {
     if (!rec) return []
     const set = new Set(rec.hands.map(h => `${h.stakes.sb}/${h.stakes.bb}`))
     return [...set].sort((a, b) => {
@@ -117,9 +117,7 @@ export default function App() {
       const [, bbb] = b.split('/').map(Number)
       return bbb - abb
     })
-  })()
-
-  const rec = records.find(r => r.id === activeRecordId)
+  }, [rec])
 
   // ── Library handlers ────────────────────────────────────────────────────────
   const handleView = (recordId: string, stakeKey: string | null) => {
@@ -129,6 +127,7 @@ export default function App() {
   }
 
   const handleDelete = async (recordId: string) => {
+    if (!window.confirm('Delete this session? This cannot be undone.')) return
     try {
       await deleteCloudRecord(recordId)
       const updated = await loadCloudRecords()
@@ -218,7 +217,7 @@ export default function App() {
         )}
 
         {/* Session detail view */}
-        {!uploading && view === 'session' && activeResult && rec && (
+        {!uploading && view === 'session' && activeResult && rec !== null && (
           <>
             {/* Nav bar */}
             <div className="flex items-center justify-between mb-6 text-xs font-mono">
