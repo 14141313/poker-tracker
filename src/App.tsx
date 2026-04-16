@@ -7,6 +7,7 @@ import { DEFAULT_TIER, type TierName } from './lib/tiers'
 import type { SessionRecord, SessionResult, GemSnapshot } from './lib/types'
 import { SessionLibrary } from './components/SessionLibrary'
 import { LifetimeDashboard } from './components/LifetimeDashboard'
+import { Button } from './components/ui/button'
 import { SummaryStrip } from './components/SummaryStrip'
 import { SessionGraph } from './components/SessionGraph'
 import { PositionTable } from './components/PositionTable'
@@ -361,12 +362,13 @@ export default function App() {
           <>
             {/* Nav bar */}
             <div className="flex items-center justify-between mb-6 text-xs font-mono">
-              <button
+              <Button
+                variant="plain"
                 onClick={() => setView('library')}
-                className="text-gray-500 hover:text-gray-300 transition-colors"
+                className="text-gray-500 hover:text-gray-700 font-mono text-xs"
               >
                 ← Sessions
-              </button>
+              </Button>
 
               <div className="flex items-center gap-2">
                 {/* Stake filter tabs (only if session has multiple stakes) */}

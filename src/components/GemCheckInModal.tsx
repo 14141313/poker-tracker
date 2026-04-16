@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { saveGemSnapshot, monthKey, prevMonthKey } from '../lib/storage'
 import type { GemSnapshot } from '../lib/types'
+import { Dialog, DialogTitle } from './ui/dialog'
+import { Button } from './ui/button'
+import { Input } from './ui/input'
+import { Field, Label, ErrorMessage } from './ui/fieldset'
 
 interface Props {
   onComplete: (snapshot: GemSnapshot) => void
@@ -52,86 +56,82 @@ export function GemCheckInModal({ onComplete, onDismiss }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
-      <div className="w-full max-w-md bg-white border border-gray-200 rounded-2xl p-6 shadow-xl">
+    <Dialog open={true} onClose={onDismiss}>
 
-        {/* Header */}
-        <div className="mb-5">
-          <div className="flex items-center justify-between mb-1">
-            <h2 className="text-gray-900 font-mono text-base">Monthly GEM Check-in</h2>
-            <button
-              onClick={onDismiss}
-              className="text-gray-400 hover:text-gray-600 transition-colors text-lg leading-none"
-            >
-              ✕
-            </button>
-          </div>
-          <p className="text-gray-500 text-xs">
-            Log your GEM balance so we can track your actual rakeback for {monthLabel(prevMonth)}.
-          </p>
+      {/* Header */}
+      <div className="mb-5">
+        <div className="flex items-center justify-between mb-1">
+          <DialogTitle>Monthly GEM Check-in</DialogTitle>
+          <button
+            onClick={onDismiss}
+            className="text-gray-400 hover:text-gray-600 transition-colors text-lg leading-none"
+          >
+            ✕
+          </button>
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-
-          {/* Current balance */}
-          <div>
-            <label className="block text-xs text-gray-600 mb-1.5">
-              Current GEM balance <span className="text-gray-400">(as of today)</span>
-            </label>
-            <input
-              type="number"
-              min="0"
-              required
-              placeholder="e.g. 12500"
-              value={balance}
-              onChange={e => setBalance(e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono text-gray-900 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/20 placeholder-gray-400"
-            />
-          </div>
-
-          {/* Redeemed last month */}
-          <div>
-            <label className="block text-xs text-gray-600 mb-1.5">
-              GEMs redeemed in {monthLabel(prevMonth)} <span className="text-gray-400">(enter 0 if none)</span>
-            </label>
-            <input
-              type="number"
-              min="0"
-              placeholder="e.g. 5000"
-              value={redeemed}
-              onChange={e => setRedeemed(e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono text-gray-900 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/20 placeholder-gray-400"
-            />
-          </div>
-
-          {error && (
-            <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-              {error}
-            </p>
-          )}
-
-          <div className="flex gap-3 pt-1">
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 py-2.5 rounded-lg bg-brand text-white text-sm font-mono font-semibold hover:bg-brand-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {loading ? 'Saving…' : 'Save Check-in'}
-            </button>
-            <button
-              type="button"
-              onClick={onDismiss}
-              className="px-4 py-2.5 rounded-lg border border-gray-200 text-gray-500 text-sm font-mono hover:border-gray-400 transition-colors"
-            >
-              Later
-            </button>
-          </div>
-        </form>
-
-        <p className="mt-4 text-xs text-gray-400 text-center">
-          GEM earnings = current balance − last month's balance + redeemed
+        <p className="text-gray-500 text-xs">
+          Log your GEM balance so we can track your actual rakeback for {monthLabel(prevMonth)}.
         </p>
       </div>
-    </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+
+        {/* Current balance */}
+        <Field>
+          <Label className="text-xs text-gray-600">
+            Current GEM balance <span className="text-gray-400">(as of today)</span>
+          </Label>
+          <Input
+            type="number"
+            min="0"
+            required
+            placeholder="e.g. 12500"
+            value={balance}
+            onChange={e => setBalance(e.target.value)}
+            className="font-mono"
+          />
+        </Field>
+
+        {/* Redeemed last month */}
+        <Field>
+          <Label className="text-xs text-gray-600">
+            GEMs redeemed in {monthLabel(prevMonth)} <span className="text-gray-400">(enter 0 if none)</span>
+          </Label>
+          <Input
+            type="number"
+            min="0"
+            placeholder="e.g. 5000"
+            value={redeemed}
+            onChange={e => setRedeemed(e.target.value)}
+            className="font-mono"
+          />
+        </Field>
+
+        {error && <ErrorMessage>{error}</ErrorMessage>}
+
+        <div className="flex gap-3 pt-1">
+          <Button
+            type="submit"
+            variant="solid"
+            disabled={loading}
+            className="flex-1 py-2.5 font-mono"
+          >
+            {loading ? 'Saving…' : 'Save Check-in'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onDismiss}
+            className="px-4 py-2.5 font-mono"
+          >
+            Later
+          </Button>
+        </div>
+      </form>
+
+      <p className="mt-4 text-xs text-gray-400 text-center">
+        GEM earnings = current balance − last month's balance + redeemed
+      </p>
+    </Dialog>
   )
 }

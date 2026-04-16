@@ -5,6 +5,7 @@ import { analyseSession } from '../lib/analyseSession'
 import { getTierConfig, type TierName } from '../lib/tiers'
 import { SessionGraph } from './SessionGraph'
 import { SessionLibrary } from './SessionLibrary'
+import { Button } from './ui/button'
 
 interface Props {
   records: SessionRecord[]
@@ -103,12 +104,13 @@ export function LifetimeDashboard({ records, snapshots, tier, onView, onDelete, 
             {handsPlayed.toLocaleString()} hands · {fmtDuration(durationMinutes)} · {records.length} session{records.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <button
+        <Button
+          variant="outline"
           onClick={onUpload}
-          className="px-4 py-2 rounded-lg border border-brand text-brand text-xs font-mono hover:bg-brand-light transition-colors"
+          className="text-xs font-mono"
         >
           + Upload Session
-        </button>
+        </Button>
       </div>
 
       {/* Lifetime stat tiles */}

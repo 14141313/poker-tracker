@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import type { SessionRecord } from '../lib/types'
 import { rawToHand } from '../lib/storage'
 import { analyseSession } from '../lib/analyseSession'
+import { Select } from './ui/select'
+import { Button } from './ui/button'
 
 interface Props {
   records: SessionRecord[]
@@ -186,27 +188,27 @@ export function SessionLibrary({ records, onView, onDelete, onUpload, hideDashbo
       {/* Filters */}
       <div className="flex gap-3 mb-4 flex-wrap">
         {sites.length > 1 && (
-          <select
+          <Select
             value={filterSite}
-            onChange={e => setFilterSite(e.target.value)}
-            className="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-mono text-gray-700 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/20"
+            onChange={e => setFilterSite((e.target as HTMLSelectElement).value)}
+            className="text-xs font-mono py-1.5 w-auto"
           >
             <option value="all">All Sites</option>
             {sites.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+          </Select>
         )}
         {stakes.length > 1 && (
-          <select
+          <Select
             value={filterStake}
-            onChange={e => setFilterStake(e.target.value)}
-            className="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-mono text-gray-700 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/20"
+            onChange={e => setFilterStake((e.target as HTMLSelectElement).value)}
+            className="text-xs font-mono py-1.5 w-auto"
           >
             <option value="all">All Stakes</option>
             {stakes.map(k => {
               const [sb, bb] = k.split('/').map(Number)
               return <option key={k} value={k}>{stakeLabel(sb, bb)}</option>
             })}
-          </select>
+          </Select>
         )}
         {(filterSite !== 'all' || filterStake !== 'all') && (
           <button
@@ -293,24 +295,26 @@ export function SessionLibrary({ records, onView, onDelete, onUpload, hideDashbo
                     >
                       All →
                     </button>
-                    <button
+                    <Button
+                      variant="plain"
                       onClick={() => onDelete(recordId)}
-                      className="text-xs text-gray-400 hover:text-negative transition-colors"
+                      className="text-xs text-gray-400 hover:text-negative transition-colors px-1 py-0.5"
                     >
                       ✕
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
               {/* Delete button for single-stake sessions */}
               {sessionRows.length === 1 && (
                 <div className="flex justify-end px-4 pb-1">
-                  <button
+                  <Button
+                    variant="plain"
                     onClick={() => onDelete(recordId)}
-                    className="text-xs text-gray-400 hover:text-negative transition-colors"
+                    className="text-xs text-gray-400 hover:text-negative transition-colors px-1 py-0.5"
                   >
                     ✕ delete
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>

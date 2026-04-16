@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { Button } from './ui/button'
+import { Input } from './ui/input'
+import { Field, Label, ErrorMessage } from './ui/fieldset'
 
 export function AuthPage() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
@@ -75,46 +78,43 @@ export function AuthPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs text-gray-500 mb-1.5">Email</label>
-            <input
+          <Field>
+            <Label className="text-xs text-gray-500">Email</Label>
+            <Input
               type="email"
               required
               autoComplete="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono text-gray-900 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/20 placeholder-gray-400"
+              className="font-mono"
               placeholder="you@example.com"
             />
-          </div>
+          </Field>
 
-          <div>
-            <label className="block text-xs text-gray-500 mb-1.5">Password</label>
-            <input
+          <Field>
+            <Label className="text-xs text-gray-500">Password</Label>
+            <Input
               type="password"
               required
               minLength={mode === 'signup' ? 8 : undefined}
               autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono text-gray-900 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/20 placeholder-gray-400"
+              className="font-mono"
               placeholder="••••••••"
             />
-          </div>
+          </Field>
 
-          {error && (
-            <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-              {error}
-            </p>
-          )}
+          {error && <ErrorMessage>{error}</ErrorMessage>}
 
-          <button
+          <Button
             type="submit"
+            variant="solid"
             disabled={loading}
-            className="w-full py-2.5 rounded-lg bg-brand text-white text-sm font-mono font-semibold hover:bg-brand-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full py-2.5 font-mono"
           >
             {loading ? '…' : mode === 'signin' ? 'Sign In' : 'Create Account'}
-          </button>
+          </Button>
         </form>
 
         <p className="text-center text-xs text-gray-400 mt-6">

@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import { OCEAN_TIERS, type TierName } from '../lib/tiers'
+import { Dialog, DialogTitle, DialogBody, DialogActions } from './ui/dialog'
+import { Button } from './ui/button'
+import { ErrorMessage } from './ui/fieldset'
 
 interface Props {
   currentTier: TierName
@@ -31,20 +34,21 @@ export function SettingsModal({ currentTier, userEmail, onSave, onClose }: Props
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
-      <div className="w-full max-w-md bg-white border border-gray-200 rounded-2xl p-6 shadow-xl">
+    <Dialog open={true} onClose={onClose}>
 
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-gray-900 font-mono text-base">Account Settings</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors text-lg leading-none"
-          >
-            ✕
-          </button>
-        </div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <DialogTitle>Account Settings</DialogTitle>
+        <Button
+          variant="plain"
+          onClick={onClose}
+          className="text-gray-400 hover:text-gray-600 text-lg leading-none px-2 py-1"
+        >
+          ✕
+        </Button>
+      </div>
 
+      <DialogBody className="mt-0">
         {/* Account info */}
         <div className="mb-6 pb-6 border-b border-gray-100">
           <p className="text-xs text-gray-500 mb-1">Signed in as</p>
@@ -95,25 +99,27 @@ export function SettingsModal({ currentTier, userEmail, onSave, onClose }: Props
             </p>
           )}
 
-          {error && (
-            <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3">
-              {error}
-            </p>
-          )}
+          {error && <ErrorMessage className="mb-3">{error}</ErrorMessage>}
 
           {saved && !hasChanged && (
             <p className="text-xs text-brand mb-3">✓ Tier saved</p>
           )}
-
-          <button
-            onClick={handleSave}
-            disabled={loading || (!hasChanged && !saved) || (saved && !hasChanged)}
-            className="w-full py-2.5 rounded-lg bg-brand text-white text-sm font-mono font-semibold hover:bg-brand-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            {loading ? 'Saving…' : saved && !hasChanged ? '✓ Saved' : 'Save Tier'}
-          </button>
         </div>
-      </div>
-    </div>
+      </DialogBody>
+
+      <DialogActions>
+        <Button
+          variant="solid"
+          onClick={handleSave}
+          disabled={loading || (!hasChanged && !saved) || (saved && !hasChanged)}
+          className="font-mono"
+        >
+          {loading ? 'Saving…' : saved && !hasChanged ? '✓ Saved' : 'Save Tier'}
+        </Button>
+        <Button variant="plain" onClick={onClose} className="font-mono">
+          Cancel
+        </Button>
+      </DialogActions>
+    </Dialog>
   )
 }
