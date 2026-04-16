@@ -123,66 +123,79 @@ function bestPloHand(hole: number[], board: number[]): number {
 
 // ── Equity calculator ─────────────────────────────────────────────────────────
 /**
- * Returns hero's equity (0–1) against one villain in a PLO hand.
+ * Returns hero's equity (0–1) against one or more villains in a PLO hand.
  *
  * - board.length === 4 (turn): exact enumeration over 1 river card
  * - board.length === 3 (flop): exact enumeration over C(deck,2) run-outs
  * - board.length === 0 (preflop) or 5 (complete): Monte Carlo / single eval
+ *
+ * Multi-way: for each runout, the player with the best hand wins the whole pot.
+ * Ties are split equally among all tied players.
  */
 export function ploEquity(
   heroCards: number[],
-  villainCards: number[],
+  allVillainCards: number[][],
   board: number[],
   mcIterations = 2_000,
 ): number {
-  // Build remaining deck
-  const used = new Set([...heroCards, ...villainCards, ...board])
+  if (allVillainCards.length === 0) return 1
+
+  // Build remaining deck — exclude all known cards
+  const used = new Set([...heroCards, ...allVillainCards.flat(), ...board])
   const deck: number[] = []
   for (let i = 0; i < 52; i++) {
     if (!used.has(i)) deck.push(i)
+  }
+
+  // Hero's equity for a fully-dealt 5-card board:
+  // find the best score across all players; if hero has it, share equally with any co-winners
+  function heroShareForBoard(fullBoard: number[]): number {
+    const heroScore = bestPloHand(heroCards, fullBoard)
+    let maxScore = heroScore
+    for (const vc of allVillainCards) {
+      const s = bestPloHand(vc, fullBoard)
+      if (s > maxScore) maxScore = s
+    }
+    if (heroScore < maxScore) return 0
+    // Hero is a winner — count co-winners among villains
+    let coWinners = 1
+    for (const vc of allVillainCards) {
+      if (bestPloHand(vc, fullBoard) === maxScore) coWinners++
+    }
+    return 1 / coWinners
   }
 
   const needed = 5 - board.length
 
   // Board already complete
   if (needed <= 0) {
-    const h = bestPloHand(heroCards, board)
-    const v = bestPloHand(villainCards, board)
-    return h > v ? 1 : h === v ? 0.5 : 0
+    return heroShareForBoard(board)
   }
 
   // 1 card to come — exact
   if (needed === 1) {
-    let wins = 0, ties = 0
+    let equity = 0
     for (const card of deck) {
-      const fb = [...board, card]
-      const h = bestPloHand(heroCards, fb)
-      const v = bestPloHand(villainCards, fb)
-      if (h > v) wins++
-      else if (h === v) ties++
+      equity += heroShareForBoard([...board, card])
     }
-    return (wins + ties * 0.5) / deck.length
+    return equity / deck.length
   }
 
   // 2 cards to come — exact C(deck,2) enumeration
   if (needed === 2) {
-    let wins = 0, ties = 0, total = 0
+    let equity = 0, total = 0
     const n = deck.length
     for (let i = 0; i < n - 1; i++) {
       for (let j = i + 1; j < n; j++) {
-        const fb = [...board, deck[i], deck[j]]
-        const h = bestPloHand(heroCards, fb)
-        const v = bestPloHand(villainCards, fb)
-        if (h > v) wins++
-        else if (h === v) ties++
+        equity += heroShareForBoard([...board, deck[i], deck[j]])
         total++
       }
     }
-    return (wins + ties * 0.5) / total
+    return equity / total
   }
 
-  // Preflop (5 cards to come) or 1-card board — Monte Carlo
-  let wins = 0, ties = 0
+  // Preflop (5 cards to come) — Monte Carlo
+  let equity = 0
   const d = [...deck]
   for (let iter = 0; iter < mcIterations; iter++) {
     // Partial Fisher-Yates: shuffle only the first `needed` positions
@@ -190,11 +203,7 @@ export function ploEquity(
       const j = i + Math.floor(Math.random() * (d.length - i))
       const tmp = d[i]; d[i] = d[j]; d[j] = tmp
     }
-    const fb = [...board, ...d.slice(0, needed)]
-    const h = bestPloHand(heroCards, fb)
-    const v = bestPloHand(villainCards, fb)
-    if (h > v) wins++
-    else if (h === v) ties++
+    equity += heroShareForBoard([...board, ...d.slice(0, needed)])
   }
-  return (wins + ties * 0.5) / mcIterations
+  return equity / mcIterations
 }

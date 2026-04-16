@@ -75,13 +75,13 @@ export function analyseSession(rawHands: SessionHand[]): SessionResult {
     let evNet = h.heroNet  // default: actual result
     if (
       h.isAllIn &&
-      h.villainCards.length === 1 &&
+      h.villainCards.length >= 1 &&
       h.holeCards.length === 4 &&
       h.totalPot > 0
     ) {
       try {
         const heroInts = parseCards(h.holeCards)
-        const villainInts = parseCards(h.villainCards[0])
+        const villainInts = h.villainCards.map(vc => parseCards(vc))
         const boardInts = parseCards(h.boardAtAllIn)
         const equity = ploEquity(heroInts, villainInts, boardInts)
         evNet = round2(equity * (h.totalPot - h.rake) - h.heroContributed)
