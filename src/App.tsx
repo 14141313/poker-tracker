@@ -53,6 +53,27 @@ export default function App() {
       .catch(err => setCloudError(err.message ?? 'Failed to load sessions'))
   }, [user])
 
+  // ── Duplicate detection ─────────────────────────────────────────────────────
+  // If ≥10% of the new upload's hands already exist in a single stored session,
+  // treat it as a duplicate and reuse that session's ID so Supabase upserts it.
+  function findDuplicateRecord(newHandIds: Set<string>): string | null {
+    const overlapCount = new Map<string, number>()
+    for (const rec of records) {
+      for (const h of rec.hands) {
+        if (newHandIds.has(h.handId)) {
+          overlapCount.set(rec.id, (overlapCount.get(rec.id) ?? 0) + 1)
+        }
+      }
+    }
+    let bestId: string | null = null
+    let bestCount = 0
+    for (const [id, count] of overlapCount) {
+      if (count > bestCount) { bestCount = count; bestId = id }
+    }
+    const DUPLICATE_THRESHOLD = 0.1
+    return bestId && bestCount / newHandIds.size >= DUPLICATE_THRESHOLD ? bestId : null
+  }
+
   // ── Process uploaded files ──────────────────────────────────────────────────
   const processFiles = useCallback(async (fileList: FileList) => {
     const names: string[] = []
@@ -74,7 +95,11 @@ export default function App() {
 
     if (valid.length === 0) { setUploading(false); return }
 
-    const record = createRecord(valid, names)
+    // Check for duplicate session and reuse its ID if found
+    const newHandIds = new Set(valid.map(h => h.handId))
+    const duplicateId = findDuplicateRecord(newHandIds)
+    let record = createRecord(valid, names)
+    if (duplicateId) record = { ...record, id: duplicateId }
 
     try {
       await saveCloudRecord(record)
@@ -88,7 +113,7 @@ export default function App() {
     }
 
     setUploading(false)
-  }, [])
+  }, [records])
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
