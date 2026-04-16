@@ -8,6 +8,8 @@ interface Props {
   onView: (recordId: string, stakeKey: string | null) => void
   onDelete: (recordId: string) => void
   onUpload: () => void
+  /** When true, suppresses the standalone header + empty state (used inside LifetimeDashboard) */
+  hideDashboard?: boolean
 }
 
 interface BreakdownRow {
@@ -44,7 +46,7 @@ function sessionDateStr(ts: number): string {
   return new Date(ts).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-export function SessionLibrary({ records, onView, onDelete, onUpload }: Props) {
+export function SessionLibrary({ records, onView, onDelete, onUpload, hideDashboard = false }: Props) {
   const [filterSite, setFilterSite] = useState<string>('all')
   const [filterStake, setFilterStake] = useState<string>('all')
 
@@ -158,19 +160,28 @@ export function SessionLibrary({ records, onView, onDelete, onUpload }: Props) {
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-lg font-mono text-white">Sessions</h1>
-          <p className="text-xs text-gray-500 mt-0.5">{records.length} session{records.length !== 1 ? 's' : ''} stored</p>
+      {/* Header — hidden when rendered inside LifetimeDashboard */}
+      {!hideDashboard && (
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-lg font-mono text-white">Sessions</h1>
+            <p className="text-xs text-gray-500 mt-0.5">{records.length} session{records.length !== 1 ? 's' : ''} stored</p>
+          </div>
+          <button
+            onClick={onUpload}
+            className="px-4 py-2 rounded border border-accent/50 text-accent text-xs font-mono hover:bg-accent/10 transition-colors"
+          >
+            + Upload Session
+          </button>
         </div>
-        <button
-          onClick={onUpload}
-          className="px-4 py-2 rounded border border-accent/50 text-accent text-xs font-mono hover:bg-accent/10 transition-colors"
-        >
-          + Upload Session
-        </button>
-      </div>
+      )}
+
+      {/* Sessions heading when inside dashboard */}
+      {hideDashboard && (
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xs text-gray-500 uppercase tracking-wider">Sessions</h2>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex gap-3 mb-4 flex-wrap">

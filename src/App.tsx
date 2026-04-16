@@ -5,6 +5,7 @@ import { analyseSession } from './lib/analyseSession'
 import { rawToHand, createRecord, loadCloudRecords, saveCloudRecord, deleteCloudRecord, loadGemSnapshots, shouldShowGemCheckIn } from './lib/storage'
 import type { SessionRecord, SessionResult, GemSnapshot } from './lib/types'
 import { SessionLibrary } from './components/SessionLibrary'
+import { LifetimeDashboard } from './components/LifetimeDashboard'
 import { SummaryStrip } from './components/SummaryStrip'
 import { SessionGraph } from './components/SessionGraph'
 import { PositionTable } from './components/PositionTable'
@@ -264,7 +265,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Library view */}
+        {/* Library / Dashboard view */}
         {!uploading && view === 'library' && (
           <div
             onDragOver={e => { e.preventDefault(); setDragging(true) }}
@@ -272,12 +273,22 @@ export default function App() {
             onDrop={onDrop}
             className={`rounded-xl transition-all ${dragging ? 'ring-2 ring-accent/40 bg-accent/5' : ''}`}
           >
-            <SessionLibrary
-              records={records}
-              onView={handleView}
-              onDelete={handleDelete}
-              onUpload={() => inputRef.current?.click()}
-            />
+            {records.length > 0 ? (
+              <LifetimeDashboard
+                records={records}
+                snapshots={gemSnapshots}
+                onView={handleView}
+                onDelete={handleDelete}
+                onUpload={() => inputRef.current?.click()}
+              />
+            ) : (
+              <SessionLibrary
+                records={records}
+                onView={handleView}
+                onDelete={handleDelete}
+                onUpload={() => inputRef.current?.click()}
+              />
+            )}
           </div>
         )}
 
