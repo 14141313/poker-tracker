@@ -100,7 +100,19 @@ export function handToRaw(h: SessionHand): RawHand {
 }
 
 export function rawToHand(r: RawHand): SessionHand {
-  return { ...r, timestamp: new Date(r.timestamp) }
+  // Provide defaults for fields added after initial release so old stored
+  // records remain compatible without a migration.
+  return {
+    ...r,
+    timestamp: new Date(r.timestamp),
+    jackpot:            r.jackpot            ?? 0,
+    bingo:              r.bingo              ?? 0,
+    fortune:            r.fortune            ?? 0,
+    tax:                r.tax                ?? 0,
+    totalDeductions:    r.totalDeductions    ?? r.rake ?? 0,
+    heroTotalDeductions:r.heroTotalDeductions ?? r.heroRake ?? 0,
+    reconciledDiff:     r.reconciledDiff     ?? 0,
+  }
 }
 
 // ── Site detection ────────────────────────────────────────────────────────────

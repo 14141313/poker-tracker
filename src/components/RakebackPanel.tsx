@@ -20,6 +20,8 @@ type TierName = typeof TIERS[number]['name']
 
 const GEMS_PER_DOLLAR = 1000
 
+function round2(n: number) { return Math.round(n * 100) / 100 }
+
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
@@ -176,9 +178,62 @@ export function RakebackPanel({ result, snapshots }: Props) {
         </div>
       </div>
 
+      {/* Pot deduction breakdown */}
+      {(() => {
+        const b = result.deductionBreakdown
+        const totalDed = round2(b.rake + b.jackpot + b.bingo + b.fortune + b.tax)
+        const hasExtra = b.jackpot > 0 || b.bingo > 0 || b.fortune > 0 || b.tax > 0
+        if (!hasExtra && result.unreconciledHands.length === 0) return null
+        return (
+          <div className="mt-5 border-t border-gray-800 pt-4">
+            <p className="text-xs text-gray-500 uppercase tracking-wider mb-3">Pot Deduction Breakdown</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-xs font-mono mb-3">
+              <DeductRow label="Rake" value={b.rake} note="TP calculated on this" />
+              {b.jackpot > 0 && <DeductRow label="Jackpot" value={b.jackpot} />}
+              {b.bingo   > 0 && <DeductRow label="Bingo"   value={b.bingo} />}
+              {b.fortune > 0 && <DeductRow label="Fortune" value={b.fortune} />}
+              {b.tax     > 0 && <DeductRow label="Tax"     value={b.tax} />}
+              {hasExtra && (
+                <div className="col-span-full border-t border-gray-800 pt-2 mt-1 flex justify-between">
+                  <span className="text-gray-400 font-semibold">Total deducted from pots</span>
+                  <span className="text-white font-semibold">${totalDed.toFixed(2)}</span>
+                </div>
+              )}
+            </div>
+            {result.unreconciledHands.length > 0 && (
+              <div className="flex items-start gap-2 bg-yellow-950/30 border border-yellow-900/40 rounded px-3 py-2">
+                <span className="text-yellow-500 text-sm mt-0.5">⚠</span>
+                <div>
+                  <p className="text-xs text-yellow-400 font-mono font-semibold">
+                    {result.unreconciledHands.length} unreconciled hand{result.unreconciledHands.length !== 1 ? 's' : ''}
+                  </p>
+                  <p className="text-xs text-yellow-700 mt-0.5">
+                    Pot total minus deductions minus collected amounts don't balance.
+                    Max discrepancy: ${Math.max(...result.unreconciledHands.map(h => Math.abs(h.diff))).toFixed(2)}
+                  </p>
+                  <p className="text-xs text-yellow-800 mt-1 font-mono">
+                    IDs: {result.unreconciledHands.slice(0, 5).map(h => h.handId).join(', ')}
+                    {result.unreconciledHands.length > 5 ? ` +${result.unreconciledHands.length - 5} more` : ''}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      })()}
+
       <p className="mt-4 text-xs text-gray-600 italic">
         Rakeback figures are estimates. GEM bulk redemption may offer better value than the standard rate — check Ocean Rewards for current offers.
       </p>
+    </div>
+  )
+}
+
+function DeductRow({ label, value, note }: { label: string; value: number; note?: string }) {
+  return (
+    <div className="flex justify-between items-baseline">
+      <span className="text-gray-600">{label}{note ? <span className="text-gray-700 ml-1">({note})</span> : ''}</span>
+      <span className="text-gray-400">${value.toFixed(2)}</span>
     </div>
   )
 }

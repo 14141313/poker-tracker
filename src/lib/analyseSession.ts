@@ -54,7 +54,10 @@ export function analyseSession(rawHands: SessionHand[]): SessionResult {
   // Aggregate totals
   let netResult = 0
   let totalHeroRake = 0
+  let totalHeroDeductions = 0
   let vpipHands = 0
+  const deductionBreakdown = { rake: 0, jackpot: 0, bingo: 0, fortune: 0, tax: 0 }
+  const unreconciledHands: Array<{ handId: string; diff: number }> = []
 
   const posAccumulators: Record<Position, PositionStats> = Object.fromEntries(
     ALL_POSITIONS.map(p => [p, { net: 0, hands: 0, vpipHands: 0, rake: 0 }])
@@ -69,7 +72,16 @@ export function analyseSession(rawHands: SessionHand[]): SessionResult {
     const h = hands[i]
     netResult += h.heroNet
     totalHeroRake += h.heroRake
+    totalHeroDeductions += h.heroTotalDeductions
     if (h.heroVPIP) vpipHands++
+    deductionBreakdown.rake    += h.rake
+    deductionBreakdown.jackpot += h.jackpot
+    deductionBreakdown.bingo   += h.bingo
+    deductionBreakdown.fortune += h.fortune
+    deductionBreakdown.tax     += h.tax
+    if (Math.abs(h.reconciledDiff) > 0.02) {
+      unreconciledHands.push({ handId: h.handId, diff: h.reconciledDiff })
+    }
 
     // Compute EV for all-in hands where we have villain cards
     let evNet = h.heroNet  // default: actual result
@@ -117,6 +129,12 @@ export function analyseSession(rawHands: SessionHand[]): SessionResult {
   const grossResult = round2(netResult + totalHeroRake)
   netResult = round2(netResult)
   totalHeroRake = round2(totalHeroRake)
+  totalHeroDeductions = round2(totalHeroDeductions)
+  deductionBreakdown.rake    = round2(deductionBreakdown.rake)
+  deductionBreakdown.jackpot = round2(deductionBreakdown.jackpot)
+  deductionBreakdown.bingo   = round2(deductionBreakdown.bingo)
+  deductionBreakdown.fortune = round2(deductionBreakdown.fortune)
+  deductionBreakdown.tax     = round2(deductionBreakdown.tax)
 
   const handsPlayed = hands.length
   const bbWon = primaryBB > 0 ? round2(netResult / primaryBB) : 0
@@ -134,6 +152,9 @@ export function analyseSession(rawHands: SessionHand[]): SessionResult {
     netResult,
     grossResult,
     totalHeroRake,
+    totalHeroDeductions,
+    deductionBreakdown,
+    unreconciledHands,
     handsPlayed,
     vpipHands,
     bbWon,
@@ -158,6 +179,9 @@ function emptyResult(): SessionResult {
     netResult: 0,
     grossResult: 0,
     totalHeroRake: 0,
+    totalHeroDeductions: 0,
+    deductionBreakdown: { rake: 0, jackpot: 0, bingo: 0, fortune: 0, tax: 0 },
+    unreconciledHands: [],
     handsPlayed: 0,
     vpipHands: 0,
     bbWon: 0,

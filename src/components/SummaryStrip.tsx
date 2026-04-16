@@ -92,7 +92,11 @@ export function SummaryStrip({ result }: Props) {
       <Card
         label="Rake Paid"
         value={`$${totalHeroRake.toFixed(2)}`}
-        sub={`VPIP ${vpipPct}% · ${vpipHands}/${handsPlayed} hands`}
+        sub={
+          result.totalHeroDeductions > result.totalHeroRake
+            ? `total deductions $${result.totalHeroDeductions.toFixed(2)} · VPIP ${vpipPct}%`
+            : `VPIP ${vpipPct}% · ${vpipHands}/${handsPlayed} hands`
+        }
       />
       <Card
         label="Hands"

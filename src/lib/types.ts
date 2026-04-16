@@ -15,10 +15,27 @@ export interface SessionHand {
   heroNet: number
   heroContributed: number
   heroCollected: number
-  /** total rake on this hand (from pot summary) */
+  /** rake deducted from pot (Ocean Rewards TP calculated against this) */
   rake: number
-  /** hero's proportional share of rake (only on VPIP'd hands) */
+  /** jackpot contribution deducted from pot */
+  jackpot: number
+  /** bingo contribution deducted from pot */
+  bingo: number
+  /** fortune contribution deducted from pot */
+  fortune: number
+  /** tax deducted from pot */
+  tax: number
+  /** rake + jackpot + bingo + fortune + tax */
+  totalDeductions: number
+  /** hero's proportional share of rake only (used for rakeback calculations) */
   heroRake: number
+  /** hero's proportional share of all deductions (true cost of playing) */
+  heroTotalDeductions: number
+  /**
+   * Reconciliation check: totalPot - totalDeductions - sumOfAllPlayerCollections.
+   * Should be 0. Non-zero values indicate a parsing discrepancy.
+   */
+  reconciledDiff: number
   heroVPIP: boolean
   position: Position
   numPlayers: number
@@ -83,6 +100,12 @@ export interface SessionResult {
   /** net + heroRake — what Hero won before rake deduction */
   grossResult: number
   totalHeroRake: number
+  /** hero's proportional share of all deductions (rake + jackpot + bingo + fortune + tax) */
+  totalHeroDeductions: number
+  /** aggregate deduction breakdown across all hands */
+  deductionBreakdown: { rake: number; jackpot: number; bingo: number; fortune: number; tax: number }
+  /** hands where totalPot - totalDeductions - totalCollected ≠ 0 (> $0.02 diff) */
+  unreconciledHands: Array<{ handId: string; diff: number }>
   handsPlayed: number
   vpipHands: number
   /** net / bigBlind */

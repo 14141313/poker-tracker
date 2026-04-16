@@ -13,10 +13,12 @@ const BUTTON_RE = /^Table .+ Seat #(\d+) is the button/
 const FLOP_RE = /^\*\*\* FLOP \*\*\* \[(\S+) (\S+) (\S+)\]/
 const TURN_RE = /^\*\*\* TURN \*\*\* \[.+\] \[(\S+)\]/
 const RIVER_RE = /^\*\*\* RIVER \*\*\* \[.+\] \[(\S+)\]/
-const TOTAL_POT_RE = /Total pot \$?([\d.]+) \| Rake \$?([\d.]+)/
+const TOTAL_POT_RE = /Total pot \$?([\d.]+)\s*\|\s*Rake \$?([\d.]+)(?:\s*\|\s*Jackpot \$?([\d.]+))?(?:\s*\|\s*Bingo \$?([\d.]+))?(?:\s*\|\s*Fortune \$?([\d.]+))?(?:\s*\|\s*Tax \$?([\d.]+))?/
 const HOLE_CARDS_RE = /Dealt to Hero \[(.+?)\]/
-// Summary seat line for Hero — handles "won", "collected", possibly multiple
+// Hero's collected amount from summary
 const HERO_WON_RE = /^Seat \d+: Hero .*?(?:won|collected) \(\$?([\d.]+)\)/
+// Any player's collected amount — used for reconciliation
+const ANYONE_WON_RE = /^Seat \d+: .+? (?:won|collected) \(\$?([\d.]+)\)/
 // "PlayerName: shows [cards]" — villain hole cards shown at showdown
 const SHOWS_RE = /^(.+?): shows \[(.+?)\]/
 const RAISES_TO_RE = /raises \$?[\d.]+ to \$?([\d.]+)/
@@ -227,24 +229,45 @@ export function parseSessionHand(hand: string): SessionHand | null {
 
   let totalPot = 0
   let rake = 0
+  let jackpot = 0
+  let bingo = 0
+  let fortune = 0
+  let tax = 0
   let heroCollected = 0
+  let totalCollected = 0  // sum of ALL player collections (for reconciliation)
 
   for (const line of lines) {
     const potMatch = line.match(TOTAL_POT_RE)
     if (potMatch) {
-      totalPot = parseFloat(potMatch[1])
-      rake = parseFloat(potMatch[2])
+      totalPot    = parseFloat(potMatch[1])
+      rake        = parseFloat(potMatch[2])
+      jackpot     = parseFloat(potMatch[3] ?? '0') || 0
+      bingo       = parseFloat(potMatch[4] ?? '0') || 0
+      fortune     = parseFloat(potMatch[5] ?? '0') || 0
+      tax         = parseFloat(potMatch[6] ?? '0') || 0
     }
-    const wonMatch = line.match(HERO_WON_RE)
-    if (wonMatch) heroCollected += parseFloat(wonMatch[1])
+    const heroWonMatch = line.match(HERO_WON_RE)
+    if (heroWonMatch) heroCollected += parseFloat(heroWonMatch[1])
+
+    const anyoneWonMatch = line.match(ANYONE_WON_RE)
+    if (anyoneWonMatch) totalCollected += parseFloat(anyoneWonMatch[1])
   }
 
+  const totalDeductions = rake + jackpot + bingo + fortune + tax
   const heroNet = heroCollected - heroContributed
 
-  // Proportional rake only on VPIP hands
+  // Proportional share — rake only for rakeback, all deductions for true cost
   const heroRake = heroVPIP && totalPot > 0
     ? rake * (heroContributed / totalPot)
     : 0
+  const heroTotalDeductions = heroVPIP && totalPot > 0
+    ? totalDeductions * (heroContributed / totalPot)
+    : 0
+
+  // Reconciliation: totalPot - deductions - totalCollected should be 0
+  const reconciledDiff = Math.round(
+    (totalPot - totalDeductions - totalCollected) * 100
+  ) / 100
 
   return {
     handId,
@@ -256,7 +279,14 @@ export function parseSessionHand(hand: string): SessionHand | null {
     heroContributed,
     heroCollected,
     rake,
+    jackpot,
+    bingo,
+    fortune,
+    tax,
+    totalDeductions,
     heroRake,
+    heroTotalDeductions,
+    reconciledDiff,
     heroVPIP,
     position: heroPosition,
     numPlayers: seats.length,
