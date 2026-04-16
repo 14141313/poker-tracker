@@ -144,8 +144,8 @@ export function SessionLibrary({ records, onView, onDelete, onUpload, hideDashbo
   if (records.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[55vh]">
-        <h1 className="text-2xl font-mono text-white mb-1">PLO Session Analyser</h1>
-        <p className="text-gray-500 text-sm mb-10">GGPoker · Multi-table · Client-side only</p>
+        <h1 className="text-2xl font-mono text-white mb-1">Stackrake</h1>
+        <p className="text-gray-500 text-sm mb-10">PLO analytics · GGPoker & Natural8 · Client-side</p>
         <button
           onClick={onUpload}
           className="border-2 border-dashed border-gray-700 hover:border-accent rounded-lg px-16 py-10 text-center transition-colors"

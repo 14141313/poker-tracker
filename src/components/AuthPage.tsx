@@ -55,8 +55,8 @@ export function AuthPage() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-bg text-gray-100">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-mono text-white mb-1">PLO Session Analyser</h1>
-          <p className="text-gray-500 text-sm">GGPoker · Multi-table · Client-side only</p>
+          <h1 className="text-2xl font-mono text-white mb-1">Stackrake</h1>
+          <p className="text-gray-500 text-sm">PLO analytics · GGPoker & Natural8 · Client-side</p>
         </div>
 
         {/* Mode toggle */}

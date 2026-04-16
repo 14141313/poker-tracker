@@ -69,8 +69,8 @@ export function UploadZone({ onResult }: Props) {
   if (state === 'idle') {
     return (
       <div className="flex flex-col items-center justify-center min-h-[55vh]">
-        <h1 className="text-2xl font-mono text-white mb-1">PLO Session Analyser</h1>
-        <p className="text-gray-500 text-sm mb-10">GGPoker · Multi-table · Client-side only</p>
+        <h1 className="text-2xl font-mono text-white mb-1">Stackrake</h1>
+        <p className="text-gray-500 text-sm mb-10">PLO analytics · GGPoker & Natural8 · Client-side</p>
 
         <div
           className={`w-full max-w-lg border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${
