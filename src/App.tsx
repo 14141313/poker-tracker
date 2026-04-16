@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { splitHands } from './lib/splitHands'
 import { parseSessionHand } from './lib/parseSessionHand'
 import { analyseSession } from './lib/analyseSession'
-import { rawToHand, createRecord, loadCloudRecords, saveCloudRecord, deleteCloudRecord, loadGemSnapshots, shouldShowGemCheckIn } from './lib/storage'
+import { rawToHand, handToRaw, createRecord, loadCloudRecords, saveCloudRecord, deleteCloudRecord, loadGemSnapshots, shouldShowGemCheckIn } from './lib/storage'
 import type { SessionRecord, SessionResult, GemSnapshot } from './lib/types'
 import { SessionLibrary } from './components/SessionLibrary'
 import { LifetimeDashboard } from './components/LifetimeDashboard'
@@ -65,14 +65,14 @@ export default function App() {
       .catch(err => setCloudError(err.message ?? 'Failed to load data'))
   }, [user])
 
-  // ── Duplicate detection ─────────────────────────────────────────────────────
-  // If ≥10% of the new upload's hands already exist in a single stored session,
-  // treat it as a duplicate and reuse that session's ID so Supabase upserts it.
-  function findDuplicateRecord(newHandIds: Set<string>): string | null {
+  // ── Session overlap detection ───────────────────────────────────────────────
+  // Finds an existing session record that shares ≥10% of hand IDs with the
+  // provided set. Used to detect when an upload is extending an existing session.
+  function findOverlappingRecord(handIds: Set<string>): string | null {
     const overlapCount = new Map<string, number>()
     for (const rec of records) {
       for (const h of rec.hands) {
-        if (newHandIds.has(h.handId)) {
+        if (handIds.has(h.handId)) {
           overlapCount.set(rec.id, (overlapCount.get(rec.id) ?? 0) + 1)
         }
       }
@@ -82,8 +82,7 @@ export default function App() {
     for (const [id, count] of overlapCount) {
       if (count > bestCount) { bestCount = count; bestId = id }
     }
-    const DUPLICATE_THRESHOLD = 0.1
-    return bestId && bestCount / newHandIds.size >= DUPLICATE_THRESHOLD ? bestId : null
+    return bestId && bestCount / handIds.size >= 0.1 ? bestId : null
   }
 
   // ── Process uploaded files ──────────────────────────────────────────────────
@@ -107,12 +106,39 @@ export default function App() {
 
     if (valid.length === 0) { setUploading(false); return }
 
-    // Check for duplicate session and reuse its ID if found
-    const newHandIds = new Set(valid.map(h => h.handId))
-    const duplicateId = findDuplicateRecord(newHandIds)
+    // ── Hand-level deduplication ──────────────────────────────────────────────
+    // Build a flat set of every hand ID already stored for this user
+    const existingHandIds = new Set(records.flatMap(r => r.hands.map(h => h.handId)))
+    // Keep only hands that are genuinely new
+    const newHands = valid.filter(h => !existingHandIds.has(h.handId))
+    // Nothing new at all — bail silently, no error, no notification
+    if (newHands.length === 0) { setUploading(false); return }
+
+    // ── Session merge / create ────────────────────────────────────────────────
+    // Run overlap check on the full parsed list so we can detect if this upload
+    // is extending an existing session even when most hands are already stored.
     const isFirstUpload = records.length === 0
-    let record = createRecord(valid, names)
-    if (duplicateId) record = { ...record, id: duplicateId }
+    const allParsedIds = new Set(valid.map(h => h.handId))
+    const overlappingId = findOverlappingRecord(allParsedIds)
+
+    let record: SessionRecord
+    if (overlappingId) {
+      // Merge the new hands into the existing session record
+      const existingRec = records.find(r => r.id === overlappingId)!
+      const existingIds = new Set(existingRec.hands.map(h => h.handId))
+      const trulyNewRaw = newHands
+        .filter(h => !existingIds.has(h.handId))
+        .map(handToRaw)
+      const base = createRecord(newHands, names)
+      record = {
+        ...base,
+        id: overlappingId,
+        hands: [...existingRec.hands, ...trulyNewRaw],
+      }
+    } else {
+      // Brand-new session — store only the new hands, not raw file content
+      record = createRecord(newHands, names)
+    }
 
     try {
       await saveCloudRecord(record)
@@ -121,7 +147,6 @@ export default function App() {
       setActiveRecordId(record.id)
       setActiveStake(null)
       setView('session')
-      // Show GEM onboarding after first-ever upload if no snapshots recorded yet
       if (isFirstUpload && gemSnapshots.length === 0) {
         setShowGemOnboarding(true)
       }
@@ -130,7 +155,7 @@ export default function App() {
     }
 
     setUploading(false)
-  }, [records])
+  }, [records, gemSnapshots])
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
