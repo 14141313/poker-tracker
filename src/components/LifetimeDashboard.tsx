@@ -114,7 +114,7 @@ export function LifetimeDashboard({ records, snapshots, tier, onView, onUpload }
       </div>
 
       {/* Lifetime stat tiles */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-3">
         <Card
           label="Net Result"
           value={sign(netResult)}
@@ -161,7 +161,21 @@ export function LifetimeDashboard({ records, snapshots, tier, onView, onUpload }
             {tier} · x{tierCfg.multiplier}
           </span>
         </div>
+
+        {/* Rakeback % tile */}
+        <div className="bg-white rounded-xl p-4 flex flex-col gap-1 min-w-0 border border-gray-100 shadow-sm">
+          <span className="text-xs text-gray-500 uppercase tracking-wider">Rakeback %</span>
+          <span className="text-xl text-brand">
+            {(tierCfg.pct * 100).toFixed(1)}%
+          </span>
+          <span className="text-xs text-gray-500">{tier} tier</span>
+        </div>
       </div>
+
+      {/* Rakeback disclaimer */}
+      <p className="text-xs text-gray-400 mb-6">
+        Estimate based on your tier rate applied to raw rake from hand histories. Actual rakeback may vary due to GGPoker PVI adjustment.
+      </p>
 
       {/* Lifetime cumulative graph */}
       <SessionGraph result={lifetimeResult} title="Lifetime Graph" />
