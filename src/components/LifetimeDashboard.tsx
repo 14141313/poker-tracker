@@ -128,6 +128,26 @@ export function LifetimeDashboard({ records, snapshots, tier, onView, onUpload }
 
   return (
     <div>
+      {/* Temporary duration debug — remove after fix */}
+      {(() => {
+        const allTs = records.flatMap(r => r.hands.map(h => h.timestamp)).sort((a,b)=>a-b)
+        const bigGaps: number[] = []
+        let play = 0
+        for (let i = 1; i < allTs.length; i++) {
+          const g = allTs[i] - allTs[i-1]
+          if (g < 3_600_000) play += g; else bigGaps.push(g)
+        }
+        return (
+          <div className="mb-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs font-mono text-yellow-900 space-y-0.5">
+            <div>first: {allTs[0]} → {new Date(allTs[0]).toISOString()}</div>
+            <div>last:  {allTs[allTs.length-1]} → {new Date(allTs[allTs.length-1]).toISOString()}</div>
+            <div>span: {((allTs[allTs.length-1]-allTs[0])/60000).toFixed(1)} min</div>
+            <div>big gaps excluded: {bigGaps.length} | samples: {bigGaps.slice(0,3).map(g=>(g/60000).toFixed(0)+'min').join(', ')}</div>
+            <div>gap-based play: {(play/60000).toFixed(1)} min = {(play/3600000).toFixed(2)} h</div>
+          </div>
+        )
+      })()}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
