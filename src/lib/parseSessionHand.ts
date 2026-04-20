@@ -253,11 +253,18 @@ export function parseSessionHand(hand: string): SessionHand | null {
       fortune     = parseFloat(potMatch[5] ?? '0') || 0
       tax         = parseFloat(potMatch[6] ?? '0') || 0
     }
-    const heroWonMatch = line.match(HERO_WON_RE)
-    if (heroWonMatch) heroCollected += parseFloat(heroWonMatch[1])
+    // Use matchAll to capture every won/collected amount per line (handles run-it-twice)
+    if (HERO_WON_RE.test(line)) {
+      for (const m of line.matchAll(/(?:won|collected) \(\$?([\d.]+)\)/g)) {
+        heroCollected += parseFloat(m[1])
+      }
+    }
 
-    const anyoneWonMatch = line.match(ANYONE_WON_RE)
-    if (anyoneWonMatch) totalCollected += parseFloat(anyoneWonMatch[1])
+    if (ANYONE_WON_RE.test(line)) {
+      for (const m of line.matchAll(/(?:won|collected) \(\$?([\d.]+)\)/g)) {
+        totalCollected += parseFloat(m[1])
+      }
+    }
   }
 
   const totalDeductions = rake + jackpot + bingo + fortune + tax
