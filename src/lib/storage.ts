@@ -14,6 +14,8 @@ export async function loadCloudRecords(): Promise<SessionRecord[]> {
     storedAt: row.stored_at,
     fileNames: row.file_names,
     site: row.site,
+    // duration_minutes is NULL for legacy records (column added after initial release)
+    durationMinutes: row.duration_minutes ?? 0,
     hands: row.hands as RawHand[],
   }))
 }
@@ -28,6 +30,7 @@ export async function saveCloudRecord(record: SessionRecord): Promise<void> {
     stored_at: record.storedAt,
     file_names: record.fileNames,
     site: record.site,
+    duration_minutes: record.durationMinutes,
     hands: record.hands,
   })
   if (error) throw error
@@ -161,11 +164,31 @@ export function clearRecords(): void {
 
 /** Create a new SessionRecord from parsed hands + file names. */
 export function createRecord(hands: SessionHand[], fileNames: string[]): SessionRecord {
+  // Duration = last hand timestamp − first hand timestamp for this upload batch.
+  // Calculated once at upload time so the dashboard never has to re-derive it
+  // across session boundaries from raw stored timestamps.
+  let durationMinutes = 0
+  if (hands.length >= 2) {
+    const timestamps = hands.map(h => h.timestamp.getTime())
+    durationMinutes = Math.round(
+      ((Math.max(...timestamps) - Math.min(...timestamps)) / 60_000) * 100
+    ) / 100
+    // Sanity check: a single cash game session > 12h is almost certainly a
+    // multi-session upload or a timestamp parsing error.
+    if (durationMinutes > 12 * 60) {
+      console.warn(
+        `[stackrake] Session duration ${(durationMinutes / 60).toFixed(1)}h exceeds 12h — ` +
+        `possible multi-session upload or timestamp error. Files: ${fileNames.join(', ')}`
+      )
+    }
+  }
+
   return {
     id: crypto.randomUUID(),
     storedAt: Date.now(),
     fileNames,
     site: detectSite(hands),
+    durationMinutes,
     hands: hands.map(handToRaw),
   }
 }

@@ -55,21 +55,31 @@ export function LifetimeDashboard({ records, snapshots, tier, onView, onUpload }
     return allHands.length > 0 ? analyseSession(allHands) : null
   }, [records])
 
-  // Sum actual play time by walking sorted timestamps and only counting gaps
-  // under 2 hours. Gaps >= 2h are treated as breaks between sessions and skipped.
-  // This correctly handles multiple playing sessions stored in one record.
+  // Sum stored per-session durations. Records uploaded after the durationMinutes
+  // field was introduced carry the correct value computed at upload time.
+  // Legacy records (durationMinutes === 0) fall back to a gap-based estimate:
+  // sum consecutive inter-hand gaps under 2h, excluding overnight breaks.
   const totalPlayMinutes = useMemo(() => {
-    const allTimestamps = records
-      .flatMap(r => r.hands.map(h => h.timestamp))
-      .sort((a, b) => a - b)
-    if (allTimestamps.length < 2) return 0
-    const BREAK_MS = 2 * 60 * 60_000 // 2 hours
-    let total = 0
-    for (let i = 1; i < allTimestamps.length; i++) {
-      const gap = allTimestamps[i] - allTimestamps[i - 1]
-      if (gap < BREAK_MS) total += gap
+    const total = records.reduce((sum, rec) => {
+      if (rec.durationMinutes > 0) return sum + rec.durationMinutes
+      // Fallback for legacy records without stored duration
+      const ts = rec.hands.map(h => h.timestamp).sort((a, b) => a - b)
+      if (ts.length < 2) return sum
+      const BREAK_MS = 2 * 60 * 60_000
+      let play = 0
+      for (let i = 1; i < ts.length; i++) {
+        const gap = ts[i] - ts[i - 1]
+        if (gap < BREAK_MS) play += gap
+      }
+      return sum + play / 60_000
+    }, 0)
+    if (import.meta.env.DEV && total > 24 * 60 && records.length < 5) {
+      console.warn(
+        `[stackrake] Dashboard shows ${(total / 60).toFixed(1)}h across ` +
+        `${records.length} session(s) — possible duration calculation bug`
+      )
     }
-    return total / 60_000
+    return total
   }, [records])
 
   // Total GEM cashback from snapshots
@@ -87,7 +97,7 @@ export function LifetimeDashboard({ records, snapshots, tier, onView, onUpload }
   const {
     netResult, grossResult, totalHeroRake,
     handsPlayed, vpipHands, bbPer100,
-    dollarsPerHour, durationMinutes, stakes,
+    stakes,
     runItTwiceHands, runItThreeHands, primaryBB,
   } = lifetimeResult
 

@@ -142,11 +142,19 @@ export default function App() {
       const trulyNewRaw = newHands
         .filter(h => !existingIds.has(h.handId))
         .map(handToRaw)
+      const mergedRaw = [...existingRec.hands, ...trulyNewRaw]
       const base = createRecord(newHands, names)
+      // Recompute duration from the full merged hand set so it stays accurate.
+      // Use first-to-last timestamp of the merged batch.
+      const mergedTs = mergedRaw.map(h => h.timestamp)
+      const mergedDuration = mergedTs.length >= 2
+        ? Math.round(((Math.max(...mergedTs) - Math.min(...mergedTs)) / 60_000) * 100) / 100
+        : 0
       record = {
         ...base,
         id: overlappingId,
-        hands: [...existingRec.hands, ...trulyNewRaw],
+        durationMinutes: mergedDuration,
+        hands: mergedRaw,
       }
     } else {
       // Brand-new session — store only the new hands, not raw file content

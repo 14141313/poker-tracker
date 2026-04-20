@@ -87,6 +87,15 @@ export interface SessionRecord {
   storedAt: number      // Date.now() when uploaded
   fileNames: string[]
   site: string          // 'GGPoker', 'Natural8', etc.
+  /**
+   * Active playing time for this session in minutes.
+   * Calculated at upload time as (lastHandTimestamp - firstHandTimestamp) / 60_000
+   * for the batch of hands in this upload. Stored in the DB so the dashboard
+   * never has to re-derive it from raw timestamps across session boundaries.
+   * Legacy records loaded from DB without this column get 0; the dashboard
+   * falls back to gap-based estimation for those.
+   */
+  durationMinutes: number
   hands: RawHand[]
 }
 
